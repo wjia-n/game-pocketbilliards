@@ -494,13 +494,6 @@ class PoolEngine extends ChangeNotifier {
         .toList();
   }
 
-  void _advanceTurn() {
-    if (_disposed || over) return;
-    phase = Phase.aiming;
-    notifyListeners();
-    _afterPhase();
-  }
-
   void _endGame(int winnerIdx, String message) {
     over = true;
     winner = winnerIdx;
