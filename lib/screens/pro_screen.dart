@@ -33,26 +33,10 @@ class _ProScreenState extends State<ProScreen> {
   @override
   void initState() {
     super.initState();
-    widget.store.proPurchased.addListener(_onPro);
     widget.store.lastThanks.addListener(_onThanks);
   }
 
-  void _onPro() {
-    if (widget.store.proPurchased.value && mounted) {
-      widget.settings.setPro(true);
-      widget.audio.win();
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('PRO unlocked — enjoy everything!',
-              style: Felt.body(15, theme: _t)),
-          backgroundColor: _t.woodDark,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-      widget.store.proPurchased.value = false;
-    }
-  }
-
+  
   void _onThanks() {
     final msg = widget.store.lastThanks.value;
     if (msg == null || !mounted) return;
@@ -69,7 +53,6 @@ class _ProScreenState extends State<ProScreen> {
 
   @override
   void dispose() {
-    widget.store.proPurchased.removeListener(_onPro);
     widget.store.lastThanks.removeListener(_onThanks);
     super.dispose();
   }
@@ -104,16 +87,7 @@ class _ProScreenState extends State<ProScreen> {
                   const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               child: Column(
                 children: [
-                  _ComparisonCard(theme: t, isPro: s.isPro),
-                  const SizedBox(height: 16),
-                  _BuyCard(
-                    theme: t,
-                    settings: s,
-                    store: store,
-                    audio: widget.audio,
-                  ),
-                  const SizedBox(height: 16),
-                  _TipsCard(
+                                    _TipsCard(
                     theme: t,
                     store: store,
                     audio: widget.audio,
@@ -130,91 +104,6 @@ class _ProScreenState extends State<ProScreen> {
 }
 
 // ---------------------------------------------------------------------------
-class _ComparisonCard extends StatelessWidget {
-  final BilliardThemeDef theme;
-  final bool isPro;
-  const _ComparisonCard({required this.theme, required this.isPro});
-
-  @override
-  Widget build(BuildContext context) {
-    const rows = [
-      ('Complete 8-ball game', true, true),
-      ('Real physics & rules', true, true),
-      ('Easy & Medium AI', true, true),
-      ('Pass-and-play 2 players', true, true),
-      ('Renameable players', true, true),
-      ('Music & sound effects', true, true),
-      ('Table themes', '4', '16+'),
-      ('Ball sets', '4', '8'),
-      ('Cue sticks', '3', '8'),
-      ('Custom table creator', false, true),
-      ('Hard AI', false, true),
-      ('Exclusive cloth finishes', false, true),
-    ];
-    return Felt.card(
-      theme: theme,
-      child: Column(
-        children: [
-          Text('Free vs PRO', style: Felt.display(20, theme: theme)),
-          const SizedBox(height: 4),
-          Text(
-            'One purchase. Yours forever.',
-            style: Felt.body(13,
-                theme: theme,
-                color: theme.ivory.withValues(alpha: 0.7)),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              const Expanded(flex: 5, child: SizedBox()),
-              Expanded(
-                  flex: 2,
-                  child: Text('FREE',
-                      style: Felt.label(12, theme: theme),
-                      textAlign: TextAlign.center)),
-              Expanded(
-                  flex: 2,
-                  child: Text('PRO',
-                      style: Felt.label(12, theme: theme),
-                      textAlign: TextAlign.center)),
-            ],
-          ),
-          const Divider(height: 14),
-          for (final r in rows)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 5),
-              child: Row(
-                children: [
-                  Expanded(
-                    flex: 5,
-                    child: Text(r.$1, style: Felt.body(13, theme: theme)),
-                  ),
-                  Expanded(flex: 2, child: _Cell(value: r.$2, theme: theme)),
-                  Expanded(flex: 2, child: _Cell(value: r.$3, theme: theme)),
-                ],
-              ),
-            ),
-          if (isPro)
-            Padding(
-              padding: const EdgeInsets.only(top: 12),
-              child: Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(18),
-                  color: theme.accent.withValues(alpha: 0.25),
-                  border: Border.all(color: theme.accentLight),
-                ),
-                child: Text('✦ PRO ACTIVE ✦',
-                    style: Felt.label(14, theme: theme)),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
 class _Cell extends StatelessWidget {
   final Object value;
   final BilliardThemeDef theme;
@@ -238,91 +127,6 @@ class _Cell extends StatelessWidget {
       value as String,
       style: Felt.label(12, theme: theme),
       textAlign: TextAlign.center,
-    );
-  }
-}
-
-// ---------------------------------------------------------------------------
-class _BuyCard extends StatelessWidget {
-  final BilliardThemeDef theme;
-  final BilliardSettings settings;
-  final StoreService store;
-  final BilliardAudio audio;
-  const _BuyCard({
-    required this.theme,
-    required this.settings,
-    required this.store,
-    required this.audio,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final pro = store.proProduct;
-    return Felt.card(
-      theme: theme,
-      child: Column(
-        children: [
-          Text('Unlock PRO', style: Felt.display(20, theme: theme)),
-          const SizedBox(height: 8),
-          if (settings.isPro)
-            Text('You already own PRO — thank you!',
-                style: Felt.body(14, theme: theme),
-                textAlign: TextAlign.center)
-          else if (!store.storeReady)
-            Text(
-              store.error ?? 'Available after store setup.',
-              style: Felt.body(14,
-                  theme: theme,
-                  color: theme.ivory.withValues(alpha: 0.7)),
-              textAlign: TextAlign.center,
-            )
-          else if (pro != null) ...[
-            Text(
-                pro.description.isNotEmpty
-                    ? pro.description
-                    : 'Unlock everything in Pocket Billiards, forever.',
-                style: Felt.body(14, theme: theme),
-                textAlign: TextAlign.center),
-            const SizedBox(height: 12),
-            ValueListenableBuilder<bool>(
-              valueListenable: store.purchaseInProgress,
-              builder: (_, busy, _) => FeltButton(
-                label: busy ? 'Working…' : 'Get PRO — ${pro.price}',
-                width: 260,
-                theme: theme,
-                onTap: busy
-                    ? () {}
-                    : () {
-                        audio.click();
-                        store.buyPro();
-                      },
-              ),
-            ),
-          ],
-          ValueListenableBuilder<String?>(
-            valueListenable: store.purchaseError,
-            builder: (_, err, _) => err == null
-                ? const SizedBox.shrink()
-                : Padding(
-                    padding: const EdgeInsets.only(top: 10),
-                    child: Text(err,
-                        style: Felt.body(13,
-                            theme: theme,
-                            color: const Color(0xFFE08A8A)),
-                        textAlign: TextAlign.center),
-                  ),
-          ),
-          const SizedBox(height: 10),
-          TextButton(
-            onPressed: () {
-              audio.click();
-              store.restore();
-            },
-            child: Text('Restore purchases',
-                style: Felt.label(13, theme: theme)),
-          ),
-        ],
-      ),
     );
   }
 }
