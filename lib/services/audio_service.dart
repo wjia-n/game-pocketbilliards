@@ -12,6 +12,9 @@ import 'package:audioplayers/audioplayers.dart';
 /// - Lifecycle uses pause()/resume() so interruptions resume in place.
 /// - Every public method catches player errors; audio can never crash the app.
 class BilliardAudio {
+  /// Per-game pitch character (pocketbilliards): 1.34x. Makes SFX unique.
+  static const double _pitchMul = 1.340;
+
   static const int _rate = 22050;
   final AudioPlayer _sfx = AudioPlayer();
   final AudioPlayer _music = AudioPlayer();
@@ -89,6 +92,8 @@ class BilliardAudio {
 
   List<double> _tone(double freq, double secs,
       {double freqEnd = 0, double attack = 0.02, double harmonics = 0.25}) {
+    freq *= _pitchMul;
+    freqEnd *= _pitchMul;
     final n = (_rate * secs).round();
     final out = List<double>.filled(n, 0);
     for (int i = 0; i < n; i++) {
@@ -132,43 +137,45 @@ class BilliardAudio {
 
   // Warm jazzy parlor pad for the menu: Dm9 – G13 – Cmaj9 – A7, 16s loop.
   Uint8List _menuBytes() => _clip('music_menu', () {
-        final seq = [
-          [293.66, 349.23, 440.0, 523.25],
-          [196.0, 246.94, 293.66, 392.0],
-          [261.63, 329.63, 392.0, 493.88],
-          [220.0, 277.18, 329.63, 415.30],
-        ];
-        final out = <double>[];
-        for (final chord in seq) {
-          out.addAll(_padChord(chord, 4.0));
-        }
-        return out;
-      });
-
-  // Mellow gameplay groove: low drone + lazy bluesy plucks, 12s loop.
-  Uint8List _gameBytes() => _clip('music_game', () {
-        final drone = _padChord([110.0, 164.81, 220.0], 12.0);
-        final plucks = [
-          329.63,
-          392.0,
-          440.0,
-          493.88,
-          440.0,
-          392.0,
-          349.23,
-          293.66
-        ];
-        final n = (_rate * 12).round();
-        final out = List<double>.from(drone);
-        for (int k = 0; k < plucks.length; k++) {
-          final start = (n * k / plucks.length).round();
-          final tone = _tone(plucks[k], 0.45, harmonics: 0.4);
-          for (int i = 0; i < tone.length && start + i < n; i++) {
-            out[start + i] += tone[i] * 0.32;
+        // E bass + melody 0 – 3 – 5 – 4, 16s loop. Unique to pocketbilliards.
+        final bassNotes = [82.41, 110.00, 138.59, 123.47];
+        final melNotes = [493.88, 659.26, 830.62, 740.00];
+        final out = List<double>.filled((_rate * 16).round(), 0);
+        final segLen = (_rate * 4).round();
+        for (int s = 0; s < 4; s++) {
+          final bass = _tone(bassNotes[s], 3.5, harmonics: 0.4);
+          final mel = _tone(melNotes[s], 1.2, harmonics: 0.25);
+          for (int i = 0; i < bass.length && s * segLen + i < out.length; i++) {
+            out[s * segLen + i] += bass[i] * 0.5;
+          }
+          final melStart = s * segLen + segLen ~/ 4;
+          for (int i = 0; i < mel.length && melStart + i < out.length; i++) {
+            out[melStart + i] += mel[i] * 0.35;
           }
         }
         return out;
       });
+
+
+  // Mellow gameplay groove: low drone + lazy bluesy plucks, 12s loop.
+  Uint8List _gameBytes() => _clip('music_game', () {
+        // E arpeggiated 0 – 3 – 5 – 4, 16s loop. Unique to pocketbilliards.
+        final notes = [164.81, 207.65, 246.94, 207.65, 220.00, 277.18, 329.63, 277.18, 277.18, 329.63, 415.31, 329.63, 246.94, 311.13, 370.00, 311.13];
+        final out = <double>[];
+        final noteLen = 16.0 / notes.length;
+        for (final n in notes) {
+          out.addAll(_tone(n, noteLen * 0.9, harmonics: 0.3));
+          final gap = List<double>.filled((_rate * noteLen * 0.1).round(), 0);
+          out.addAll(gap);
+        }
+        // Soft pad underneath
+        final pad = _padChord([164.81, 207.65, 246.94], 16.0);
+        for (int i = 0; i < out.length && i < pad.length; i++) {
+          out[i] += pad[i] * 0.3;
+        }
+        return out;
+      });
+
 
   // --------------------------------------------------------------- physical
   /// Cue-tip strike: short wooden tap with a leather-tip softness.
