@@ -3,6 +3,7 @@ import '../services/audio_service.dart';
 import '../services/settings_service.dart';
 import '../theme/billiards_themes.dart';
 import '../theme/felt_ui.dart';
+import '../transfer/transfer_ui.dart';
 
 /// Audio controls + player renaming.
 class SettingsScreen extends StatefulWidget {
@@ -50,6 +51,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
               child: Column(
                 children: [
+              TransferSaveTile(gameSlug: 'pocketbilliards'),
                   Felt.card(
                     theme: t,
                     child: Column(
