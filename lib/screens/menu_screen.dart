@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:in_app_review/in_app_review.dart';
 import 'package:share_plus/share_plus.dart';
@@ -176,7 +177,7 @@ class _MenuScreenState extends State<MenuScreen> {
                       ),
                       alignment: Alignment.center,
                       child: Text(
-                        '☕  Tip Jar',
+                        defaultTargetPlatform == TargetPlatform.iOS ? '⭐ Gold Star' : '☕  Tip Jar',
                         style: Felt.label(17, theme: t, color: t.woodDark),
                       ),
                     ),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:in_app_purchase/in_app_purchase.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 /// Real Play Billing tip jar for Pocket Billiards: Tip jar (all content is free and unlocked).
 ///
@@ -14,7 +15,14 @@ import 'package:in_app_purchase/in_app_purchase.dart';
 class StoreService {
   static const coffeeId = 'pocketbilliardscoffee';
   static const chocolateId = 'pocketbilliardschocolate';
-  static const productIds = {coffeeId, chocolateId};
+  // iOS-only Gold Star (non-consumable, $1.99 in App Store Connect).
+  static const starId = 'pocketbilliardsstar';
+  /// Platform-gated product set: iOS gets ONLY the Gold Star;
+  /// Android keeps the coffee/chocolate tip jar, byte-identical.
+  static Set<String> productIdsFor(TargetPlatform p) =>
+      p == TargetPlatform.iOS ? {starId} : {coffeeId, chocolateId};
+  static Set<String> get productIds =>
+      productIdsFor(defaultTargetPlatform);
   ProductDetails? get proProduct => null; // Pro removed — everything is free
 
   InAppPurchase? _iap; // lazy: InAppPurchase has no web implementation
@@ -28,11 +36,14 @@ class StoreService {
 
   final ValueNotifier<String?> lastThanks = ValueNotifier(null);
   final ValueNotifier<bool> proPurchased = ValueNotifier(true); // everything unlocked
+  // iOS Gold Star ownership (cosmetic badge only; nothing gates on it).
+  final ValueNotifier<bool> goldStarOwned = ValueNotifier(false);
   final ValueNotifier<bool> purchaseInProgress = ValueNotifier(false);
   final ValueNotifier<String?> purchaseError = ValueNotifier(null);
 
   ProductDetails? get coffeeProduct => _byId(coffeeId);
   ProductDetails? get chocolateProduct => _byId(chocolateId);
+  ProductDetails? get starProduct => _byId(starId);
 
   ProductDetails? _byId(String id) {
     for (final p in products) {
@@ -50,6 +61,8 @@ class StoreService {
       error = 'Tips unavailable on web';
       return;
     }
+    final prefs = await SharedPreferences.getInstance();
+    goldStarOwned.value = prefs.getBool('goldStarOwned') ?? false;
     _iap = InAppPurchase.instance;
     try {
       available = await _iap!.isAvailable();
@@ -62,7 +75,7 @@ class StoreService {
         onError: (_) {},
         cancelOnError: false,
       );
-      final resp = await _iap!.queryProductDetails(productIds);
+      final resp = await _iap!.queryProductDetails(productIdsFor(defaultTargetPlatform));
       if (resp.error != null) {
         error = 'Could not reach the store';
         return;
@@ -80,7 +93,12 @@ class StoreService {
     for (final p in list) {
       if (p.status == PurchaseStatus.purchased ||
           p.status == PurchaseStatus.restored) {
-        if (p.productID == chocolateId) {
+        if (p.productID == starId) {
+          goldStarOwned.value = true;
+          SharedPreferences.getInstance()
+              .then((prefs) => prefs.setBool('goldStarOwned', true));
+          lastThanks.value = 'Thank you — Gold Star earned! ⭐';
+        } else if (p.productID == chocolateId) {
           lastThanks.value = 'Thank you for the chocolate!';
         } else if (p.productID == coffeeId) {
           lastThanks.value = 'Thank you for the coffee!';
@@ -117,6 +135,20 @@ class StoreService {
     }
   }
 
+  /// iOS only: buy the Gold Star (NON-consumable — never consumed).
+  Future<void> buyStar(ProductDetails product) async {
+    purchaseError.value = null;
+    purchaseInProgress.value = true;
+    try {
+      await _iap!.buyNonConsumable(
+        purchaseParam: PurchaseParam(productDetails: product),
+      );
+    } catch (_) {
+      purchaseInProgress.value = false;
+      purchaseError.value = 'Purchase failed — please try again.';
+    }
+  }
+
   Future<void> restore() async {
     purchaseError.value = null;
     try {
@@ -129,6 +161,7 @@ class StoreService {
   Future<void> dispose() async {
     await _sub?.cancel();
     lastThanks.dispose();
+    goldStarOwned.dispose();
     purchaseInProgress.dispose();
     purchaseError.dispose();
   }
