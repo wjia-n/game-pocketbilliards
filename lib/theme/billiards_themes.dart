@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 /// Billiards-hall visual catalog: real wood rails, brass trim, felt cloth.
@@ -293,6 +294,13 @@ class BilliardThemes {
 
   static bool isProTheme(String id) =>
       !freeThemeIds.contains(id) && id != 'custom';
+
+  // iOS variant: the 'Ebony Pro' theme renders as 'Ebony' (Android keeps
+  // the original name).
+  static String displayName(BilliardThemeDef td) =>
+      defaultTargetPlatform == TargetPlatform.iOS && td.id == 'ebony'
+          ? 'Ebony'
+          : td.name;
 }
 
 /// Ball finishes — how the 16 balls are rendered. 0-3 FREE, 4+ PRO.
@@ -300,6 +308,17 @@ class BallStyles {
   static const names = [
     'Classic Gloss',
     'Tournament Pro',
+    'Vintage Ivory',
+    'Matte Club',
+    'Pearl Sheen',
+    'Marble Swirl',
+    'Copper Shine',
+    'Onyx & Gold',
+  ];
+  // iOS variant: same names without the PRO tag (Android keeps the original).
+  static const namesIos = [
+    'Classic Gloss',
+    'Tournament',
     'Vintage Ivory',
     'Matte Club',
     'Pearl Sheen',
@@ -329,6 +348,17 @@ class CueStyles {
     'Cherrywood',
     'Rosewood Inlay',
     'Carbon Pro',
+    'Ivory Collar',
+    'Brass Rings',
+    'Golden Trim',
+  ];
+  // iOS variant: same names without the PRO tag (Android keeps the original).
+  static const namesIos = [
+    'Maple Classic',
+    'Dark Ebony',
+    'Cherrywood',
+    'Rosewood Inlay',
+    'Carbon',
     'Ivory Collar',
     'Brass Rings',
     'Golden Trim',

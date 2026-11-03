@@ -535,7 +535,7 @@ class _ThemeCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 3),
                     Text(
-                      td.name,
+                      BilliardThemes.displayName(td),
                       style: Felt.body(9, theme: theme),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
@@ -642,7 +642,9 @@ class _AppearanceCard extends StatelessWidget {
               for (int i = 0; i < BallStyles.names.length; i++)
                 Felt.chip(
                   theme: theme,
-                  text: BallStyles.names[i],
+                  text: (defaultTargetPlatform == TargetPlatform.iOS
+                      ? BallStyles.namesIos
+                      : BallStyles.names)[i],
                   selected: settings.ballStyle == i,
                   locked:
                       !settings.isPro && BallStyles.isPro(i),
@@ -661,7 +663,9 @@ class _AppearanceCard extends StatelessWidget {
               for (int i = 0; i < CueStyles.names.length; i++)
                 Felt.chip(
                   theme: theme,
-                  text: CueStyles.names[i],
+                  text: (defaultTargetPlatform == TargetPlatform.iOS
+                      ? CueStyles.namesIos
+                      : CueStyles.names)[i],
                   selected: settings.cueStyle == i,
                   locked: !settings.isPro && CueStyles.isPro(i),
                   onTap: () {
